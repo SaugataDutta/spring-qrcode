@@ -1,4 +1,5 @@
-package com.falabella;
+package com.falabella.controller;
+
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
@@ -6,30 +7,26 @@ import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
+import javax.imageio.stream.ImageOutputStream;
+import javax.imageio.stream.MemoryCacheImageOutputStream;
+import java.awt.Graphics2D;
+import java.awt.Color;
 import java.awt.image.BufferedImage;
-import java.io.File;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Hashtable;
 
-public class QRCodeGenerator {
-    public static void main(String[] args) throws IOException, WriterException {
-        String qrCodeText = "https://www.journaldev.com";
-        String filePath = "JD.png";
-        int size = 125;
-        String fileType = "png";
-        File qrFile = new File(filePath);
-        createQRImage(qrFile,
-                qrCodeText,
-                size,
-                fileType);
-        System.out.println("DONE");
-    }
+@RestController
+@RequestMapping("/api/v1/code")
+public class CodeGeneratorController {
 
-    private static void createQRImage(File qrFile, String qrCodeText, int size,
-            String fileType)
+    private static BufferedImage getQRImage(String qrCodeText, int size)
             throws WriterException, IOException {
         // Create the ByteMatrix for the QR-Code that encodes the given String
         Hashtable<EncodeHintType, ErrorCorrectionLevel> hintMap = new Hashtable<>();
@@ -68,8 +65,28 @@ public class QRCodeGenerator {
                 }
             }
         }
-        ImageIO.write(image,
-                fileType,
-                qrFile);
+        return image;
+    }
+
+    @GetMapping(produces = MediaType.IMAGE_GIF_VALUE)
+    public byte[] getQRCode() throws WriterException {
+
+        String qrCodeText = "Name:Saugata Dutta, Age:32, Country:India";
+        int size = 250;
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ImageOutputStream ios = new MemoryCacheImageOutputStream(out);
+
+        try {
+            if (!ImageIO.write(getQRImage(qrCodeText,
+                    size),
+                    "PNG",
+                    ios)) {
+                throw new IOException("ImageIO.write failed");
+            }
+            ios.close();
+        } catch (IOException ex) {
+            throw new RuntimeException("saveImage: " + ex.getMessage());
+        }
+        return out.toByteArray();
     }
 }
